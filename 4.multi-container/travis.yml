@@ -1,0 +1,50 @@
+sudo: required
+services:
+  - docker
+
+before_install: 
+  - docker build -t nmxmxh/docker-react -f ./client/Dockerfile.dev .  ./client
+
+script:
+  - docker run nmxmxh/docker-react yarn test -- --coverage
+
+after_success:
+  - docker build -t nmxmxh/multi-client -f ./client
+  - docker build -t nmxmxh/multi-nginx -f  ./nginx
+  - docker build -t nmxmxh/multi-server -f  ./server
+  - docker build -t nmxmxh/multi-worker -f  ./worker
+
+# log in to docker cli
+# push to docker hub.
+# setup docker_id variables in travis
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password---password-stdin
+# doing the login step in one command.
+  - docker push nmxmxh/multi-client
+  - docker push nmxmxh/multi-nginx
+  - docker push nmxmxh/multi-server
+  - docker push nmxmxh/multi-worker
+
+deploy:
+  provider: elasticbeanstalk
+  region: "us-east-1"
+  app: "name-in-all-applications"
+  env: "name-of-environment"
+  bucket_name: "name-of-bucket-for-zip"
+  bucket_path: "name-of-folder-with-name-of-project (app name)"
+  on: 
+    branch: master
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key:
+    secret: "$AWS_SECRET_KEY"
+
+
+# IAM for managing api keys
+# policies ? permissions for new user.
+# you can search through description.
+# secret access key is shown only once.
+# do not put keys directly in repo.
+# environment secrets provided by Travis CI.
+# environment variables in Travis.
+# AWS_SECRET_KEY | AWS_ACCESS_KEY 
+# current working directory as build context
+# script section? primary test running section.
